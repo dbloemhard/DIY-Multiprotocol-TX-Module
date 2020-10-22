@@ -23,7 +23,7 @@
 //If you know parameters you want for sure to be enabled or disabled which survives in future, you can use a file named "_MyConfig.h".
 //An example is given within the file named "_MyConfig.h.example" which needs to be renamed if you want to use it.
 //To enable this config file remove the // from the line below.
-//#define USE_MY_CONFIG
+#define USE_MY_CONFIG
 
 
 /*************************/
@@ -81,7 +81,7 @@
 //#define SX1276_INSTALLED		// only supported on STM32 modules
 
 //Uncomment (remove //) if you have an internal 5-in-1 Multi module.
-//All components are considered to be installed and specifics to that module are automatically configured 
+//All components are considered to be installed and specifics to that module are automatically configured
 //#define MULTI_5IN1_INTERNAL
 
 /** OrangeRX TX **/
@@ -91,7 +91,7 @@
 
 /** CC2500 Fine Frequency Tuning **/
 //For optimal performance the CC2500 RF module used by the CORONA, FrSkyD, FrSkyV, FrSkyX, Hitec, HoTT, SFHSS and Redpine protocols needs to be tuned for each protocol.
-//Initial tuning should be done via the radio menu with a genuine CORONA/FrSky/Hitec/HoTT/Futaba/Redpine receiver.  
+//Initial tuning should be done via the radio menu with a genuine CORONA/FrSky/Hitec/HoTT/Futaba/Redpine receiver.
 //Once a good tuning value is found it can be set here and will override the radio's 'option' setting for all existing and new models which use that protocol.
 //For more information: https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/tree/master/docs/Frequency_Tuning.md
 //Uncomment the lines below (remove the "//") and set an appropriate value (replace the "0") to enable. Valid range is -127 to +127.
@@ -260,7 +260,7 @@
 // You can disable this feature by adding "//" on the line below. You have to specify which channel (14 by default) will be used to kill the throttle channel.
 // If the channel 14 is above -50% the throttle is untouched but if it is between -50% and -100%, the throttle output will be forced between -100% and -150%.
 // For example, a value of -80% applied on channel 14 will instantly kill the motors on the X-Vert.
-#define DSM_THROTTLE_KILL_CH 14 
+#define DSM_THROTTLE_KILL_CH 14
 
 //Enable DSM Forward Programming
 #define DSM_FWD_PGM
@@ -778,14 +778,14 @@ const PPM_Parameters PPM_prot[14*NBR_BANKS]=	{
 //Uncomment following lines to enable derect inputs or define your own configuration in _MyConfig.h
 /*
 #define ENABLE_DIRECT_INPUTS
-		
-#define DI1_PIN				PC13	
+
+#define DI1_PIN				PC13
 #define IS_DI1_on			(digitalRead(DI1_PIN)==LOW)
 
-#define DI2_PIN				PC14	
+#define DI2_PIN				PC14
 #define IS_DI2_on			(digitalRead(DI2_PIN)==LOW)
 
-#define DI3_PIN				PC15	
+#define DI3_PIN				PC15
 #define IS_DI3_on			(digitalRead(DI3_PIN)==LOW)
 
 //Define up to 4 direct input channels

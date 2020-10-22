@@ -846,7 +846,8 @@ void TelemetryUpdate()
 			t -= h ;
 		if ( t < 32 )
 		{
-			debugln("TEL_BUF_FULL %d",t);
+      //This line fills up the serial monitor window when debugging - not needed!
+			//debugln("TEL_BUF_FULL %d",t);
 			return ;
 		}
 /*		else

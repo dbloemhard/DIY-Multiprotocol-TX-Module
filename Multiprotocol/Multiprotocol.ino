@@ -121,6 +121,10 @@ uint8_t  armed, arm_flags, arm_channel_previous;
 uint8_t  num_ch;
 uint32_t pps_timer;
 uint16_t pps_counter;
+#ifdef LITERADIO2
+  //press bind any time to bind
+  static bool bind_was_pressed=false;
+#endif
 
 #ifdef CC2500_INSTALLED
 	#ifdef SCANNER_CC2500_INO
@@ -470,13 +474,15 @@ void setup()
 	//Wait for every component to start
 	delayMilliseconds(100);
 	
-	// Read status of bind button
-	if( IS_BIND_BUTTON_on )
-	{
-		BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
-		BIND_IN_PROGRESS;		// Request bind
-	}
-	else
+#ifndef LITERADIO2
+  // Read status of bind button
+  if( IS_BIND_BUTTON_on )
+  {
+    BIND_BUTTON_FLAG_on;  // If bind button pressed save the status
+    BIND_IN_PROGRESS;   // Request bind
+  }
+  else
+#endif // Lite radio 2 uses the bind on startup to switch protocols (banks)
 		BIND_DONE;
 
 	// Read status of mode select binary switch
@@ -492,7 +498,9 @@ void setup()
 			((PROTO_DIAL3_ipr & _BV(PROTO_DIAL3_pin)) ? 0 : 4) +
 			((PROTO_DIAL4_ipr & _BV(PROTO_DIAL4_pin)) ? 0 : 8);
 	#endif
-	//mode_select=1;
+#ifdef LITERADIO2
+	mode_select=1;
+#endif
     debugln("Protocol selection switch reads as %d", mode_select);
 
 	#ifdef ENABLE_PPM
@@ -806,6 +814,58 @@ bool Update_All()
 			INPUT_SIGNAL_on;								// valid signal received
 			last_signal=millis();
 		}
+    #ifdef DEBUG_SERIAL
+      // Fine tuning for Frsky protocols, done via the Serial Debug, using inputs from your PC keyboard
+      #if defined(FRSKYD_CC2500_INO) || defined(FRSKYL_CC2500_INO) || defined(FRSKYX_CC2500_INO) || defined(FRSKYV_CC2500_INO) || defined(AFHDS2A_A7105_INO) || defined(FRSKYR9_SX1276_INO)
+      if(protocol==PROTO_FRSKYD || protocol==PROTO_FRSKYL || protocol==PROTO_FRSKYX || protocol==PROTO_FRSKYX2 || protocol==PROTO_FRSKYV || protocol==PROTO_AFHDS2A || protocol==PROTO_FRSKY_R9)
+        if (Serial.available() > 0) {
+        switch(Serial.read())
+        {
+          case 'q':
+            debugln("Decrease Option by 10");
+            option-=10;
+            debugln("Option = %d", option); 
+            break;
+          case 'w':
+            debugln("Decrease Option by 1");
+            option-=1;
+            debugln("Option = %d", option); 
+            break;
+          case 'e':
+            debugln("Increase Option by 1");
+            option+=1;
+            debugln("Option = %d", option); 
+            break;
+          case 'r':
+            debugln("Increase Option by 10");
+            option+=10;
+            debugln("Option = %d", option); 
+            break;
+        }  
+      } // end: if (Serial.available() > 0)
+      #endif
+    #endif
+   
+    #ifdef LITERADIO2
+    if(!IS_BIND_IN_PROGRESS && !IS_FAILSAFE_VALUES_on)  // bind is not finished yet or Failsafe being sent
+    {
+      BIND_SET_INPUT;
+      BIND_SET_PULLUP;
+      
+      if(IS_BIND_BUTTON_on)
+        bind_was_pressed=true;
+      else
+        {
+          if(bind_was_pressed)
+          { // Initiate bind after the Bind is released
+            bind_was_pressed=false;
+            CHANGE_PROTOCOL_FLAG_on;    //reload protocol
+            BIND_IN_PROGRESS;           //enable bind
+          }
+        }
+      BIND_SET_OUTPUT;
+    }    
+    #endif   
 	#endif //ENABLE_PPM
 	update_led_status();
 	#if defined(TELEMETRY)
@@ -896,12 +956,17 @@ static void update_channels_aux(void)
 // Update led status based on binding and serial
 static void update_led_status(void)
 {
-	if(IS_INPUT_SIGNAL_on)
-		if(millis()-last_signal>70)
-		{
-			INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
-			debugln("No input signal");
-		}
+  #ifdef DEBUG_SERIAL
+  INPUT_SIGNAL_on;
+  #else
+  if(IS_INPUT_SIGNAL_on)
+    if(millis()-last_signal>70)
+    {
+      INPUT_SIGNAL_off;             //no valid signal (PPM or Serial) received for 70ms
+      debugln("No input signal");
+    }
+  #endif
+
 	if(blink<millis())
 	{
 		if(IS_INPUT_SIGNAL_off)
@@ -949,6 +1014,36 @@ uint8_t bank_switch(void)
 		bank=0;
 	}
 	debugln("Using bank %d", bank);
+
+#ifdef LITERADIO2
+  if(mode_select!=0) 
+    {
+    //Lite Radio 2 select bank by pressing the bind button while powering up
+    bool increase_bank=false;
+    while(IS_BIND_BUTTON_on) // wait for user to release the bind button before doing anything
+      increase_bank=true;
+  
+    if(increase_bank)
+    {
+      bank++;
+      if(bank>=NBR_BANKS)
+        bank=0;
+      eeprom_write_byte((EE_ADDR)EEPROM_BANK_OFFSET,bank);
+      debugln("Bind was pressed, now using bank %d", bank);  
+    }
+    // Now flash LED to indicate which bank you are using. This will be using delay, so its not the best code (radio does nothing until flashing complete)
+    LED_output;
+    LED_off;
+    delay(BLINK_BANK_TIME_LOW);
+    for(uint8_t i=0;i<=bank;i++)
+    {
+      LED_on;
+      delay(BLINK_BANK_TIME_HIGH);
+      LED_off;
+      delay(BLINK_BANK_TIME_LOW);
+    }
+  }
+#else
 
 	phase=3;
 	uint32_t check=millis();
@@ -1017,6 +1112,7 @@ uint8_t bank_switch(void)
 			check+=1;
 		}
 	}
+#endif // Not Lite Radio 2
 	return bank;
 }
 #endif
@@ -2114,7 +2210,11 @@ void modules_reset()
 			usart2_begin(100000,SERIAL_8E2);
 			USART2_BASE->CR1 |= USART_CR1_PCE_BIT;
 		}
-		usart3_begin(100000,SERIAL_8E2);
+    #ifdef BLUETOOTHTELEMETRY
+    usart3_begin(9600,SERIAL_8N1);    //USART3 goes to Bluetooth module
+    #else
+    usart3_begin(100000,SERIAL_8E2);
+    #endif
 		USART3_BASE->CR1 &= ~ USART_CR1_RE;		//disable receive
 		USART2_BASE->CR1 &= ~ USART_CR1_TE;		//disable transmit
 	#else

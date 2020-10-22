@@ -212,9 +212,9 @@
 		#define IS_BIND_BUTTON_on	( (BIND_ipr & _BV(BIND_pin)) == 0x00 )
 	#endif
 #else //STM32_BOARD
-	#define	BIND_pin		PA0
+	#define	BIND_pin		PC15 //PA0
 	#define	LED_pin			PA1
-	#define	LED2_pin		PA2
+	#define	LED2_pin		PC13 //PA2
 	//
 	#define	PPM_pin			PA8								//PPM  5V tolerant
 	//
@@ -294,11 +294,11 @@
 	#define	IS_LED_on		( digitalRead(LED_pin)==HIGH)
 
 	//iRangeX modules have a second LED
-	#define	LED2_on			digitalWrite(LED2_pin,HIGH)
-	#define	LED2_off		digitalWrite(LED2_pin,LOW)
+	#define	LED2_on			digitalWrite(LED2_pin,LOW)
+	#define	LED2_off		digitalWrite(LED2_pin,HIGH)
 	#define	LED2_toggle		digitalWrite(LED2_pin ,!digitalRead(LED2_pin))
 	#define	LED2_output		pinMode(LED2_pin,OUTPUT)
-	#define	IS_LED2_on		( digitalRead(LED2_pin)==HIGH)
+	#define	IS_LED2_on		( digitalRead(LED2_pin)==LOW)
 
 	#define BIND_SET_INPUT		pinMode(BIND_pin,INPUT)
 	#define BIND_SET_PULLUP		digitalWrite(BIND_pin,HIGH)	
